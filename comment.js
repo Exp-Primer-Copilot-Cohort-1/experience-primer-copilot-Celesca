@@ -1,66 +1,53 @@
 // Create web server
+var http = require('http');
+var fs = require('fs');
+var url = require('url');
+var qs = require('querystring');
+var path = require('path');
+var sanitizeHtml = require('sanitize-html');
+var template = require('./lib/template.js');
+//var templateList = require('./lib/templateList.js');
+var db = require('./lib/db');
+var topic = require('./lib/topic');
+var author = require('./lib/author');
+//const { response } = require('express');
 
-// Import modules
-const express = require('express');
-const bodyParser = require('body-parser');
-const mongoose = require('mongoose');
-const Comment = require('./models/comment');
-
-// Create app
-const app = express();
-
-// Set up body parser
-app.use(bodyParser.json());
-
-// Connect to database
-mongoose.connect('mongodb://localhost:27017/commentDB', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
+var app = http.createServer(function(request,response){
+    var _url = request.url;
+    var queryData = url.parse(_url, true).query; //querystring
+    var pathname = url.parse(_url, true).pathname; //path
+    //console.log(url.parse(_url, true));
+    //console.log(pathname);
+    //console.log(queryData.id);
+    if(pathname === '/'){
+        if(queryData.id === undefined){
+            topic.home(request,response);
+        } else {
+            topic.page(request,response);
+        }
+    } else if(pathname === '/create'){
+        topic.create(request,response);
+    } else if(pathname === '/create_process'){
+        topic.create_process(request,response);
+    } else if(pathname === '/update'){
+        topic.update(request,response);
+    } else if(pathname === '/update_process'){
+        topic.update_process(request,response);
+    } else if(pathname === '/delete_process'){
+        topic.delete_process(request,response);
+    } else if(pathname === '/author'){
+        author.home(request,response);
+    } else if(pathname === '/author/create_process'){
+        author.create_process(request,response);
+    } else if(pathname === '/author/update'){
+        author.update(request,response);
+    } else if(pathname === '/author/update_process'){
+        author.update_process(request,response);
+    } else if(pathname === '/author/delete_process'){
+        author.delete_process(request,response);
+    } else {
+        response.writeHead(404);
+        response.end('Not found');
+    }
 });
-
-// Create home route
-app.get('/', (req, res) => {
-  res.send('This is the home route');
-});
-
-// Create route to get all comments
-app.get('/comments', (req, res) => {
-  Comment.find({}).then((comments) => {
-    res.json(comments);
-  });
-});
-
-// Create route to get a comment by id
-app.get('/comments/:id', (req, res) => {
-  Comment.findOne({ _id: req.params.id }).then((comment) => {
-    res.json(comment);
-  });
-});
-
-// Create route to post a comment
-app.post('/comments', (req, res) => {
-  Comment.create(req.body).then((comment) => {
-    res.json(comment);
-  });
-});
-
-// Create route to update a comment
-app.put('/comments/:id', (req, res) => {
-  Comment.findByIdAndUpdate({ _id: req.params.id }, req.body).then(() => {
-    Comment.findOne({ _id: req.params.id }).then((comment) => {
-      res.json(comment);
-    });
-  });
-});
-
-// Create route to delete a comment
-app.delete('/comments/:id', (req, res) => {
-  Comment.findByIdAndDelete({ _id: req.params.id }).then((comment) => {
-    res.json(comment);
-  });
-});
-
-// Set up port
-app.listen(3000, () => {
-  console.log('Server is running on port 3000');
-});
+app.listen(3000);
